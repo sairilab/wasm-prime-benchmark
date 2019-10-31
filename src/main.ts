@@ -1,4 +1,6 @@
 import Vue from 'vue';
+import 'bulma/bulma.sass';
+
 import App from './App.vue';
 import './registerServiceWorker';
 import router from './router';
