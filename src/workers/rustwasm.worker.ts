@@ -1,28 +1,20 @@
-// const wasm = import('rust-wasm-prime');
-/* eslint-disable */
-// const _import = require('dynamic-import-polyfill');
-import _import from 'dynamic-import-polyfill';
+{
+  let wasmMod: any;
+  let initialized: boolean = false;
 
-_import.initialize({
+  addEventListener('message', async (e) => {
+    const { target } = e.data;
 
-})
-console.log(_import);
-const wasm = _import('rust-wasm-prime');
-wasm.then((mod) => {
-  const calc = (target: number) => {
+    console.log(initialized);
+    if (!initialized) {
+      wasmMod = await import('rust-wasm-prime');
+    }
+
     const start = performance.now();
-    const prime = mod.calc_prime(target);
-    const end = performance.now();
-
-    const time = end - start;
-
-    return {
-      prime,
-      time,
-    };
-  };
-
-  addEventListener('message', (message) => {
-    postMessage(calc(message.data.target), '*');
+    const result = wasmMod.calc_prime(target);
+    console.log('success', result, performance.now() - start);
+    postMessage({ result, time: performance.now() });
   });
-});
+}
+
+console.log('loaded rustwasm.worker.ts');

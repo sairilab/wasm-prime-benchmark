@@ -109,8 +109,8 @@ export default class Primes extends Vue {
   }
 
   private jsCalc2() {
-    const worker = new Worker('@/workers/jsprime.worker', { type: 'module' });
-    worker.postMessage({});
+    // const worker = new Worker('@/workers/jsprime.worker', { type: 'module' });
+    // worker.postMessage({});
     this.jsResult = 100;
   }
 
@@ -126,7 +126,19 @@ export default class Primes extends Vue {
   }
 
   private rustCalc2() {
-    this.rustResult = 'ohayosan';
+    const start = performance.now();
+    const timer = setInterval(() => { this.rustTime = performance.now() - start; }, 10);
+
+    const worker = new Worker('@/workers/rustwasm.worker', { type: 'module' });
+    worker.onmessage = (e) => {
+      const { result, time } = e.data;
+      console.log(performance.now() - time, performance.now(), time);
+      this.rustResult = result;
+      clearInterval(timer);
+      // this.rustTime = performance.now() - start;
+    };
+
+    worker.postMessage({ target: this.target });
   }
 
   // The Programming Language C (emscripten)
