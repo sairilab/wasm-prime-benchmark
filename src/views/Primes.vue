@@ -22,31 +22,48 @@
 
     <div class="results">
       <h2 class="has-text-weight-medium is-size-4">Results</h2>
+
+      <!-- JavaScript -->
       <div class="js lang columns">
         <div class="lang-logo">
-          <img src="../../static/rustlogo.png" alt="">
+          <img src="../../static/js-logo.png" alt="">
         </div>
         <div class="results-wrapper">
           <p>JavaScript: {{ jsResult }}</p>
-          <p>time: {{ jsTime }} msec</p>
+          <p>Time: {{ jsTime }} msec</p>
         </div>
       </div>
+
+      <!-- Go -->
+      <div class="go lang columns">
+        <div class="lang-logo">
+          <img src="../../static/gopher2.png" alt="">
+        </div>
+        <div class="results-wrapper">
+          <p>Go: 0</p>
+          <p>Time: 0 msec</p>
+        </div>
+      </div>
+
+      <!-- rust -->
       <div class="rust lang columns">
         <div class="lang-logo">
           <img src="../../static/rustlogo.png" alt="">
         </div>
         <div class="results-wrapper">
           <p>Rust: {{ rustResult }}</p>
-          <p>time: {{ rustTime }} msec</p>
+          <p>Time: {{ rustTime }} msec</p>
         </div>
       </div>
+
+      <!-- c -->
       <div class="clang lang columns">
         <div class="lang-logo">
           <img src="../../static/c-logo.png" alt="">
         </div>
         <div class="results-wrapper">
           <p>C: {{ clangResult }}</p>
-          <p>time: {{ clangTime }} msec</p>
+          <p>Time: {{ clangTime }} msec</p>
         </div>
       </div>
     </div>
@@ -72,11 +89,12 @@ export default class Primes extends Vue {
   }
 
   public startCalc() {
-    this.jsCalc();
-    this.rustCalc();
-    this.clangCalc();
+    // this.jsCalc();
+    // this.rustCalc();
+    // this.clangCalc();
 
-    // this.rustCalc2();
+    this.jsCalc2();
+    this.rustCalc2();
   }
 
   // JavaScript
@@ -88,6 +106,12 @@ export default class Primes extends Vue {
     const start = performance.now();
     this.jsResult = calcPrimeJs(this.targetIndex);
     this.jsTime = performance.now() - start;
+  }
+
+  private jsCalc2() {
+    const worker = new Worker('@/workers/jsprime.worker', { type: 'module' });
+    worker.postMessage({});
+    this.jsResult = 100;
   }
 
   // Rust
@@ -145,7 +169,15 @@ export default class Primes extends Vue {
 }
 
 .lang-logo {
-  width: 100px;
+  min-width: 100px;
+  max-height: 100px;
+
+  img {
+    display: block;
+    margin: auto;
+    max-width: 100%;
+    max-height: 100%;
+  }
 }
 
 .results-wrapper {

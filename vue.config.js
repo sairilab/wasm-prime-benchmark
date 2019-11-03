@@ -19,10 +19,18 @@ module.exports = {
     //     },
     //   ],
     // },
+    output: {
+      chunkFilename: '[id].[chunkhash].js',
+    },
+    optimization: {
+      splitChunks: {
+        chunks: 'all',
+      },
+    },
     plugins: [
       new WorkerPlugin({
-        
-      })
-    ]
+
+      }),
+    ],
   },
-}
+};
