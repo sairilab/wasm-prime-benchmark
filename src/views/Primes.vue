@@ -15,7 +15,7 @@
           <input type="number" class="input" placeholder="target index" v-model="target">
         </div>
         <div class="control">
-          <button class="button is-primary" @click="startCalc">計算！</button>
+          <button class="button is-primary" @click="startCalc" :disabled="!initialized">計算！</button>
         </div>
       </div>
     </div>
@@ -82,19 +82,18 @@ export default class Primes extends Vue {
     return parseInt(this.target, 10);
   }
 
-  public rustWasm!: any;
+
+  public initialized = false;
 
   public async created() {
-    this.rustWasm = await import('rust-wasm-prime');
+    this.initJsWorker();
+    this.initRustWorker();
   }
 
   public startCalc() {
-    // this.jsCalc();
-    // this.rustCalc();
+    this.jsCalc();
+    this.rustCalc();
     // this.clangCalc();
-
-    this.jsCalc2();
-    this.rustCalc2();
   }
 
   // JavaScript
@@ -102,16 +101,32 @@ export default class Primes extends Vue {
 
   public jsTime = 0;
 
-  private jsCalc() {
-    const start = performance.now();
-    this.jsResult = calcPrimeJs(this.targetIndex);
-    this.jsTime = performance.now() - start;
+  private jsWorker!: Worker;
+
+  private initJsWorker() {
+    this.initialized = false;
+    this.jsWorker = new Worker('@/workers/jsprime.worker', { type: 'module' });
+
+    this.jsWorker.onmessage = (e) => {
+      if (e.data === 'initialized') {
+        this.initialized = true;
+      }
+    };
   }
 
-  private jsCalc2() {
-    // const worker = new Worker('@/workers/jsprime.worker', { type: 'module' });
-    // worker.postMessage({});
-    this.jsResult = 100;
+  private jsCalc() {
+    const start = performance.now();
+    const timer = setInterval(() => { this.jsTime = performance.now() - start; }, 1);
+
+    this.jsWorker.onmessage = (e) => {
+      const { result, time } = e.data;
+
+      this.jsResult = result;
+      clearInterval(timer);
+      this.jsTime = time;
+    };
+
+    this.jsWorker.postMessage({ target: this.targetIndex });
   }
 
   // Rust
@@ -119,26 +134,32 @@ export default class Primes extends Vue {
 
   public rustTime = 0;
 
-  private rustCalc() {
-    const start = performance.now();
-    this.rustResult = this.rustWasm.calc_prime(this.targetIndex).toString(10);
-    this.rustTime = performance.now() - start;
+  public rustWorker!: Worker;
+
+  private initRustWorker() {
+    this.initialized = false;
+    this.rustWorker = new Worker('@/workers/rustwasm.worker', { type: 'module' });
+
+    this.rustWorker.onmessage = (e) => {
+      if (e.data === 'initialized') {
+        this.initialized = true;
+      }
+    };
   }
 
-  private rustCalc2() {
+  private async rustCalc() {
     const start = performance.now();
-    const timer = setInterval(() => { this.rustTime = performance.now() - start; }, 10);
+    const timer = setInterval(() => { this.rustTime = performance.now() - start; }, 1);
 
-    const worker = new Worker('@/workers/rustwasm.worker', { type: 'module' });
-    worker.onmessage = (e) => {
+    this.rustWorker.onmessage = (e) => {
       const { result, time } = e.data;
-      console.log(performance.now() - time, performance.now(), time);
+
       this.rustResult = result;
       clearInterval(timer);
-      // this.rustTime = performance.now() - start;
+      this.rustTime = time;
     };
 
-    worker.postMessage({ target: this.target });
+    this.rustWorker.postMessage({ target: this.targetIndex });
   }
 
   // The Programming Language C (emscripten)
