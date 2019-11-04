@@ -1,24 +1,11 @@
 const WorkerPlugin = require('worker-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
-  chainWebpack: config => config.resolve.symlinks(false),
   configureWebpack: {
-    // module: {
-    //   rules: [
-    //     {
-    //       test: /\.worker\.ts$/,
-    //       use: [
-    //         {
-    //           loader: 'worker-loader',
-    //           options: {
-    //             name: '[name].js',
-    //           },
-    //         },
-    //         'ts-loader',
-    //       ],
-    //     },
-    //   ],
-    // },
+    resolve: {
+      extensions: ['.js', '.wasm'],
+    },
     output: {
       chunkFilename: '[id].[chunkhash].js',
     },
@@ -31,6 +18,15 @@ module.exports = {
       new WorkerPlugin({
 
       }),
+      // new CopyWebpackPlugin(
+      //   [
+      //     {
+      //       from: 'src/modules/*.wasm',
+      //       to: 'static/',
+      //     }
+      //   ],
+      //   // { context: 'src/modules/*.wasm' }
+      // ),
     ],
   },
 };

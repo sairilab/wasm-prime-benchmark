@@ -5,17 +5,21 @@
     </div>
     <div class="header">
       <h1 class="title is-size-4-mobile">Wasm Prime Benchmark</h1>
-      <p class="subtitle is-size-6-mobile">いろんな言語をwasmにビルドしてみたよ</p>
+      <!-- <p class="subtitle is-size-6-mobile">いろんな言語をwasmにビルドしてみたよ</p> -->
     </div>
 
     <div class="input-area">
-      <p class="has-text-weight-bold has-text-left">何番目の素数を求める？</p>
+      <p class="has-text-weight-bold has-text-left">How many prime numbers will you calculate?</p>
       <div class="field is-grouped">
         <div class="control is-expanded">
           <input type="number" class="input" placeholder="target index" v-model="target">
         </div>
         <div class="control">
-          <button class="button is-primary" @click="startCalc" :disabled="!initialized">計算！</button>
+          <button class="button is-primary"
+          @click="startCalc"
+          :disabled="disable">
+          Calc
+        </button>
         </div>
       </div>
     </div>
@@ -29,7 +33,7 @@
           <img src="../../static/js-logo.png" alt="">
         </div>
         <div class="results-wrapper">
-          <p>JavaScript: {{ jsResult }}</p>
+          <p>JS(not wasm): {{ jsResult }}</p>
           <p>Time: {{ jsTime }} msec</p>
         </div>
       </div>
@@ -62,7 +66,7 @@
           <img src="../../static/c-logo.png" alt="">
         </div>
         <div class="results-wrapper">
-          <p>C: {{ clangResult }}</p>
+          <p>C(emscripten): {{ clangResult }}</p>
           <p>Time: {{ clangTime }} msec</p>
         </div>
       </div>
@@ -72,28 +76,41 @@
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
-import calcPrimeJs from '@/modules/primes';
 
 @Component
 export default class Primes extends Vue {
-  public target = '100000';
+  public target = '1000000';
 
   private get targetIndex() {
     return parseInt(this.target, 10);
   }
 
+  private initialized = false;
 
-  public initialized = false;
+  private calculating = false;
 
-  public async created() {
-    this.initJsWorker();
-    this.initRustWorker();
+  get disable() {
+    return !this.initialized || this.calculating;
   }
 
-  public startCalc() {
-    this.jsCalc();
-    this.rustCalc();
-    // this.clangCalc();
+  // TODO: いろいろとコンポーネント化したい；；
+  public async created() {
+    await Promise.all([
+      this.initJsWorker(),
+      this.initRustWorker(),
+      this.initClangWorker(),
+    ]);
+    this.initialized = true;
+  }
+
+  public async startCalc() {
+    this.calculating = true;
+    await Promise.all([
+      this.jsCalc(),
+      this.rustCalc(),
+      this.clangCalc(),
+    ]);
+    this.calculating = false;
   }
 
   // JavaScript
@@ -104,29 +121,35 @@ export default class Primes extends Vue {
   private jsWorker!: Worker;
 
   private initJsWorker() {
-    this.initialized = false;
     this.jsWorker = new Worker('@/workers/jsprime.worker', { type: 'module' });
 
-    this.jsWorker.onmessage = (e) => {
-      if (e.data === 'initialized') {
-        this.initialized = true;
-      }
-    };
+    return new Promise((resolve) => {
+      this.jsWorker.onmessage = (e) => {
+        if (e.data === 'initialized') {
+          resolve();
+        }
+      };
+    });
   }
 
-  private jsCalc() {
-    const start = performance.now();
-    const timer = setInterval(() => { this.jsTime = performance.now() - start; }, 1);
+  private async jsCalc() {
+    return new Promise((resolve) => {
+      this.jsResult = 0;
+      const start = performance.now();
+      const timer = setInterval(() => { this.jsTime = performance.now() - start; }, 1);
 
-    this.jsWorker.onmessage = (e) => {
-      const { result, time } = e.data;
+      this.jsWorker.onmessage = (e) => {
+        const { result, time } = e.data;
 
-      this.jsResult = result;
-      clearInterval(timer);
-      this.jsTime = time;
-    };
+        clearInterval(timer);
 
-    this.jsWorker.postMessage({ target: this.targetIndex });
+        this.jsResult = result;
+        this.jsTime = time;
+        resolve();
+      };
+
+      this.jsWorker.postMessage({ target: this.targetIndex });
+    });
   }
 
   // Rust
@@ -137,42 +160,75 @@ export default class Primes extends Vue {
   public rustWorker!: Worker;
 
   private initRustWorker() {
-    this.initialized = false;
     this.rustWorker = new Worker('@/workers/rustwasm.worker', { type: 'module' });
 
-    this.rustWorker.onmessage = (e) => {
-      if (e.data === 'initialized') {
-        this.initialized = true;
-      }
-    };
+    return new Promise((resolve) => {
+      this.rustWorker.onmessage = (e) => {
+        if (e.data === 'initialized') {
+          resolve();
+        }
+      };
+    });
   }
 
   private async rustCalc() {
-    const start = performance.now();
-    const timer = setInterval(() => { this.rustTime = performance.now() - start; }, 1);
+    return new Promise((resolve) => {
+      this.rustResult = '0';
+      const start = performance.now();
+      const timer = setInterval(() => { this.rustTime = performance.now() - start; }, 1);
 
-    this.rustWorker.onmessage = (e) => {
-      const { result, time } = e.data;
+      this.rustWorker.onmessage = (e) => {
+        const { result, time } = e.data;
 
-      this.rustResult = result;
-      clearInterval(timer);
-      this.rustTime = time;
-    };
+        clearInterval(timer);
 
-    this.rustWorker.postMessage({ target: this.targetIndex });
+        this.rustResult = result;
+        this.rustTime = time;
+        resolve();
+      };
+
+      this.rustWorker.postMessage({ target: this.targetIndex });
+    });
   }
 
   // The Programming Language C (emscripten)
-  public clangResult = '';
+  public clangResult = '0';
 
   public clangTime = 0;
 
+  private clangWorker!: Worker;
+
+  private initClangWorker() {
+    this.clangWorker = new Worker('@/workers/cwasm.worker', { type: 'module' });
+
+    return new Promise((resolve) => {
+      this.clangWorker.onmessage = (e) => {
+        if (e.data === 'initialized') {
+          resolve();
+        }
+      };
+    });
+  }
+
   private clangCalc() {
-    const start = performance.now();
-    // TODO: Remove eval
-    /* eslint-disable no-eval */
-    this.clangResult = eval('Module._calc_prime_c(this.targetIndex).toString(10)');
-    this.clangTime = performance.now() - start;
+    return new Promise((resolve) => {
+      this.clangResult = '0';
+
+      const start = performance.now();
+      const timer = setInterval(() => { this.clangTime = performance.now() - start; }, 1);
+
+      this.clangWorker.onmessage = (e) => {
+        const { result, time } = e.data;
+
+        clearInterval(timer);
+
+        this.clangResult = result;
+        this.clangTime = time;
+        resolve();
+      };
+
+      this.clangWorker.postMessage({ target: this.targetIndex });
+    });
   }
 }
 </script>
@@ -202,7 +258,7 @@ export default class Primes extends Vue {
 }
 
 .lang-logo {
-  min-width: 100px;
+  max-width: 100px;
   max-height: 100px;
 
   img {
