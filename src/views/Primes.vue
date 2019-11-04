@@ -44,8 +44,8 @@
           <img src="../../static/gopher2.png" alt="">
         </div>
         <div class="results-wrapper">
-          <p>Go: 0</p>
-          <p>Time: 0 msec</p>
+          <p>Go: {{ goResult }}</p>
+          <p>Time: {{ goTime }} msec</p>
         </div>
       </div>
 
@@ -99,6 +99,7 @@ export default class Primes extends Vue {
       this.initJsWorker(),
       this.initRustWorker(),
       this.initClangWorker(),
+      this.initGoWorker(),
     ]);
     this.initialized = true;
   }
@@ -109,6 +110,7 @@ export default class Primes extends Vue {
       this.jsCalc(),
       this.rustCalc(),
       this.clangCalc(),
+      this.goCalc(),
     ]);
     this.calculating = false;
   }
@@ -151,6 +153,46 @@ export default class Primes extends Vue {
       this.jsWorker.postMessage({ target: this.targetIndex });
     });
   }
+
+  // Go
+  public goResult = 0;
+
+  public goTime = 0;
+
+  private goWorker!: Worker;
+
+  private initGoWorker() {
+    this.goWorker = new Worker('@/workers/gowasm.worker', { type: 'module' });
+
+    return new Promise((resolve) => {
+      this.goWorker.onmessage = (e) => {
+        if (e.data === 'initialized') {
+          resolve();
+        }
+      };
+    });
+  }
+
+  private goCalc() {
+    return new Promise((resolve) => {
+      this.goResult = 0;
+      const start = performance.now();
+      const timer = setInterval(() => { this.goTime = performance.now() - start; }, 1);
+
+      this.goWorker.onmessage = (e) => {
+        const { result, time } = e.data;
+
+        clearInterval(timer);
+
+        this.goResult = result;
+        this.goTime = time;
+        resolve();
+      };
+
+      this.goWorker.postMessage({ target: this.targetIndex });
+    });
+  }
+
 
   // Rust
   public rustResult = '';

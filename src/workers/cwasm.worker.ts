@@ -1,4 +1,4 @@
-class ClangWasm{
+class ClangWasm {
   private wasmModule: any;
 
   private initialized = false;
