@@ -1,5 +1,4 @@
 const WorkerPlugin = require('worker-plugin');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   configureWebpack: {
@@ -18,15 +17,6 @@ module.exports = {
       new WorkerPlugin({
 
       }),
-      // new CopyWebpackPlugin(
-      //   [
-      //     {
-      //       from: 'src/modules/*.wasm',
-      //       to: 'static/',
-      //     }
-      //   ],
-      //   // { context: 'src/modules/*.wasm' }
-      // ),
     ],
   },
 };
