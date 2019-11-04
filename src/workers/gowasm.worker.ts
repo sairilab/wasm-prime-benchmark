@@ -6,6 +6,13 @@ class GoWasm {
 
     const go = new Go();
 
+    // Apple信者用
+    if (!WebAssembly.instantiateStreaming) {
+			WebAssembly.instantiateStreaming = async (resp, importObject) => {
+				const source = await (await resp).arrayBuffer();
+				return await WebAssembly.instantiate(source, importObject);
+			};
+		}
     const mod = await WebAssembly.instantiateStreaming(fetch('primes-go.wasm'), go.importObject);
     go.run(mod.instance);
 
