@@ -19,7 +19,7 @@ class GoWasm {
     this.initialized = true;
   }
 
-  public calcPrime = (target: number) => global.calcPrimeGo(target)
+  public calcPrime = (target: number) => global.calcPrimeGo(target);
 }
 
 const goWasm = new GoWasm();
