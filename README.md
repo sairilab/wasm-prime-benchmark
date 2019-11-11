@@ -1,24 +1,18 @@
-# prime_benchmark
+# Wasm Prime Benchmark
 
-## Project setup
-```
-yarn install
-```
+https://links.sairilab.com/wasm-prime
 
-### Compiles and hot-reloads for development
-```
-yarn serve
-```
+Benchmark for WebAssembly with calculating prime numbers.
 
-### Compiles and minifies for production
-```
-yarn build
-```
+## Supported Languages
+* TypeScript (Not Wasm)
+* Rust (wasm-pack)
+* C (emscripten)
+* Go
 
-### Lints and fixes files
-```
-yarn lint
-```
+## Support in the future
+* AssemblyScript
+* Ruby
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+## License
+MIT.
