@@ -7,6 +7,7 @@ module.exports = {
   plugins: [
     '@babel/plugin-syntax-dynamic-import',
     '@babel/plugin-syntax-import-meta',
+    '@babel/plugin-proposal-optional-chaining',
   ],
   // exclude: [
   //   path.resolve('./src/workers/rustwasm.worker.ts'),

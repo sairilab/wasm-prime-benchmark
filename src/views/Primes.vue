@@ -1,7 +1,7 @@
 <template>
   <div class="primes container">
     <div class="wasm-logo">
-      <img src="../../static/wasm.png" alt="">
+      <img src="@/assets/wasm.png" alt="">
     </div>
     <div class="header">
       <h1 class="title is-size-4-mobile">Wasm Prime Benchmark</h1>
@@ -12,7 +12,7 @@
       <p class="has-text-weight-bold has-text-left">How many prime numbers will you calculate?</p>
       <div class="field is-grouped">
         <div class="control is-expanded">
-          <input type="number" class="input" placeholder="target index" v-model="target">
+          <input type="number" class="input" placeholder="target index" v-model="targetIndex">
         </div>
         <div class="control">
           <button class="button is-primary"
@@ -27,19 +27,26 @@
     <div class="results">
       <h2 class="has-text-weight-medium is-size-4">Results</h2>
 
+      <calc-result language="TypeScript"></calc-result>
+
+      <calc-result language="Rust"></calc-result>
+
+      <calc-result language="C"></calc-result>
+
+      <calc-result language="Go"></calc-result>
       <!-- JavaScript -->
-      <div class="js lang columns">
+      <!-- <div class="js lang columns">
         <div class="lang-logo">
-          <img src="../../static/js-logo.png" alt="">
+          <img :src="jsLogo" alt="">
         </div>
         <div class="results-wrapper">
           <p>JS(not wasm): {{ jsResult }}</p>
           <p>Time: {{ jsTime }} msec</p>
         </div>
-      </div>
+      </div> -->
 
       <!-- Go -->
-      <div class="go lang columns">
+      <!-- <div class="go lang columns">
         <div class="lang-logo">
           <img src="../../static/gopher2.png" alt="">
         </div>
@@ -47,10 +54,10 @@
           <p>Go: {{ goResult }}</p>
           <p>Time: {{ goTime }} msec</p>
         </div>
-      </div>
+      </div> -->
 
       <!-- rust -->
-      <div class="rust lang columns">
+      <!-- <div class="rust lang columns">
         <div class="lang-logo">
           <img src="../../static/rustlogo.png" alt="">
         </div>
@@ -58,10 +65,10 @@
           <p>Rust: {{ rustResult }}</p>
           <p>Time: {{ rustTime }} msec</p>
         </div>
-      </div>
+      </div> -->
 
       <!-- c -->
-      <div class="clang lang columns">
+      <!-- <div class="clang lang columns">
         <div class="lang-logo">
           <img src="../../static/c-logo.png" alt="">
         </div>
@@ -69,20 +76,28 @@
           <p>C(emscripten): {{ clangResult }}</p>
           <p>Time: {{ clangTime }} msec</p>
         </div>
-      </div>
+      </div> -->
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
+import primeModules from '@/store/modules/primeModules';
+import CalcResult from '@/components/CalcResult.vue';
 
-@Component
+@Component({
+  components: {
+    CalcResult,
+  },
+})
 export default class Primes extends Vue {
-  public target = '1000000';
-
   private get targetIndex() {
-    return parseInt(this.target, 10);
+    return this.$store.state.target;
+  }
+
+  private set targetIndex(newTarget: string) {
+    this.$store.commit('updateTarget', { target: parseInt(newTarget, 10) });
   }
 
   private initialized = false;
@@ -93,25 +108,38 @@ export default class Primes extends Vue {
     return !this.initialized || this.calculating;
   }
 
-  // TODO: いろいろとコンポーネント化したい；；
+  // eslint-disable-next-line class-methods-use-this
+  get languages() {
+    return primeModules.availableLanguages;
+  }
+
   public async created() {
-    await Promise.all([
-      this.initJsWorker(),
-      this.initRustWorker(),
-      this.initClangWorker(),
-      this.initGoWorker(),
-    ]);
+    this.jsLogo = primeModules.findModule('TypeScript').logo;
+    // await Promise.all([
+    //   // this.initJsWorker(),
+    //   primeModules.initModules(),
+    //   this.initRustWorker(),
+    //   this.initClangWorker(),
+    //   this.initGoWorker(),
+    // ]);
+    await primeModules.initModules();
     this.initialized = true;
   }
 
   public async startCalc() {
     this.calculating = true;
-    await Promise.all([
-      this.jsCalc(),
-      this.rustCalc(),
-      this.clangCalc(),
-      this.goCalc(),
-    ]);
+    // await Promise.all([
+    //   this.jsCalc(),
+    //   this.rustCalc(),
+    //   this.clangCalc(),
+    //   this.goCalc(),
+    // ]);
+    // await Promise.all([
+    //   primeModules.calcWith('TypeScript'),
+    //   primeModules.calcWith('Rust'),
+    // ]);
+    // await primeModules.calcAll();
+    await this.$store.dispatch('calc');
     this.calculating = false;
   }
 
@@ -119,6 +147,8 @@ export default class Primes extends Vue {
   public jsResult = 0;
 
   public jsTime = 0;
+
+  public jsLogo!: string;
 
   private jsWorker!: Worker;
 
@@ -140,7 +170,9 @@ export default class Primes extends Vue {
       const start = performance.now();
       const timer = setInterval(() => { this.jsTime = performance.now() - start; }, 1);
 
-      this.jsWorker.onmessage = (e) => {
+      const worker = primeModules.findModule('TypeScript').worker as Worker;
+
+      worker.onmessage = (e) => {
         const { result, time } = e.data;
 
         clearInterval(timer);
@@ -150,7 +182,7 @@ export default class Primes extends Vue {
         resolve();
       };
 
-      this.jsWorker.postMessage({ target: this.targetIndex });
+      worker.postMessage({ target: this.targetIndex });
     });
   }
 
@@ -293,27 +325,5 @@ export default class Primes extends Vue {
 
 .input-area {
   margin: 30px auto;
-}
-
-.lang {
-  margin-top: 0px;
-}
-
-.lang-logo {
-  max-width: 100px;
-  max-height: 100px;
-
-  img {
-    display: block;
-    margin: auto;
-    max-width: 100%;
-    max-height: 100%;
-  }
-}
-
-.results-wrapper {
-  font-size: 1.5em;
-  margin-top: 15px;
-  margin-left: 15px;
 }
 </style>

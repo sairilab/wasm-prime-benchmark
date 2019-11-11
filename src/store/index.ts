@@ -1,23 +1,26 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
 
+// import PrimeModules from './primes';
 
 Vue.use(Vuex);
 
 export default new Vuex.Store({
   state: {
-    rustResult: 0,
+    target: 1000000,
+    calcTasks: [] as (() => void)[],
   },
   mutations: {
-    setRustResult(state, { result }) {
-      state.rustResult = result;
+    updateTarget(state, { target }) {
+      state.target = target;
+    },
+    addCalcEvent(state, { task }) {
+      state.calcTasks.push(task);
     },
   },
   actions: {
-    async calc({ commit }, { target }) {
-      const wasmRust = await import('rust-wasm-prime');
-      const prime = wasmRust.calc_prime(target);
-      commit('setRustResult', { result: prime });
+    async calc({ state }) {
+      state.calcTasks.forEach(async t => t());
     },
   },
   modules: {
