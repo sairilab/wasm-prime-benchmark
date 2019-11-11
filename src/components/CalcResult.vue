@@ -4,9 +4,8 @@
       <img :src="logo" alt="">
     </div>
     <div class="results-wrapper">
-      <!-- <p>{{ language }}</p> -->
-      <p>{{ language }}: {{ prime || 0 }}</p>
-      <p>Time: {{ time || 0 }} msec</p>
+      <p>{{ language }}: {{ prime }}</p>
+      <p>Time: {{ time }} msec</p>
     </div>
   </div>
 </template>
@@ -35,8 +34,8 @@ export default class CalcResult extends Vue {
       await primeModules.calcWith(this.language);
 
       clearInterval(timer);
-      this.prime = this.resultPrime;
-      this.time = this.resultTime;
+      this.prime = this.resultPrime || 0;
+      this.time = this.resultTime || 0;
     };
     this.$store.state.calcTasks.push(task);
   }
@@ -50,12 +49,10 @@ export default class CalcResult extends Vue {
   }
 
   get resultPrime() {
-    // return this.mod.result && this.mod.result.prime;
     return this.mod.result?.prime;
   }
 
   get resultTime() {
-    // return this.mod.result && this.mod.result.time;
     return this.mod.result?.time;
   }
 }

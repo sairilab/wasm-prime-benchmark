@@ -79,11 +79,6 @@ class PrimeModules extends VuexModule {
     });
   }
 
-  // @Action({})
-  // public async calcAll() {
-  //   return Promise.all(this.availableLanguages.map(l => this.calcWith(l)));
-  // }
-
   private static chackInit(worker: Worker) {
     return new Promise((resolve) => {
       // eslint-disable-next-line no-param-reassign
