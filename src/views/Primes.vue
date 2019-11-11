@@ -12,7 +12,7 @@
       <p class="has-text-weight-bold has-text-left">How many prime numbers will you calculate?</p>
       <div class="field is-grouped">
         <div class="control is-expanded">
-          <input type="number" class="input" placeholder="target index" v-model="targetIndex">
+          <input type="text" class="input" placeholder="target index" v-model="targetIndex">
         </div>
         <div class="control">
           <button class="button is-primary"
