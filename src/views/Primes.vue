@@ -17,7 +17,7 @@
         <div class="control">
           <button class="button is-primary"
           @click="startCalc"
-          :disabled="disable">
+          :disabled="isDisabled">
           Calc
         </button>
         </div>
@@ -57,13 +57,7 @@ export default class Primes extends Vue {
     this.$store.commit('updateTarget', { target: parseInt(newTarget, 10) });
   }
 
-  private initialized = false;
-
-  private calculating = false;
-
-  get disable() {
-    return !this.initialized || this.calculating;
-  }
+  public isDisabled = true;
 
   // eslint-disable-next-line class-methods-use-this
   get languages() {
@@ -72,13 +66,13 @@ export default class Primes extends Vue {
 
   public async created() {
     await primeModules.initModules();
-    this.initialized = true;
+    this.isDisabled = false;
   }
 
   public async startCalc() {
-    this.calculating = true;
+    this.isDisabled = true;
     await this.$store.dispatch('calc');
-    this.calculating = false;
+    this.isDisabled = false;
   }
 }
 </script>

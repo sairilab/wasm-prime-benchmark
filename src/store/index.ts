@@ -20,7 +20,7 @@ export default new Vuex.Store({
   },
   actions: {
     async calc({ state }) {
-      state.calcTasks.forEach(async t => t());
+      await Promise.all(state.calcTasks.map(async t => t()));
     },
   },
   modules: {
